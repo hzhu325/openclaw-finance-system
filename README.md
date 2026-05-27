@@ -9,12 +9,11 @@ Real-money execution is **out of scope by design**. Every non-HOLD proposal
 must pass schema validation, an independent risk review, and an explicit human
 approval card before any execution path could be released.
 
-This project was developed as one of three iterations of a multi-agent finance
-system built during my data science internship at BONC (东方国信), April – June
-2026. The earlier iterations (`fintrade` and `stocklab`) explored single-stock
-pipelines and persona-driven analysis. **OpenClaw is the iteration that
-focuses on safety, schema discipline, and HITL governance**, which were the
-parts I found most under-treated in the earlier versions.
+This project was developed during my data science internship at BONC
+(东方国信), April – June 2026. It is the iteration of the work that
+specifically focuses on **safety, schema discipline, and HITL governance**;
+earlier internal iterations explored different aspects of multi-agent
+coordination and are not published here.
 
 ---
 
@@ -108,10 +107,9 @@ This project was written with the help of AI-assisted coding. Design
 decisions — the simulation-first scope, the
 HITL-mandatory contract, the schema-first interface between agents, the
 externalization of policy thresholds into `config/trading_policy.json`, and
-the choice to keep the debate deterministic in this iteration — were mine, as
-was the iteration plan that produced `fintrade`, `stocklab` and `OpenClaw` in
-sequence. The code itself was produced through iterative prompting, manual
-review and integration testing on my side.
+the choice to keep the debate deterministic in this iteration — were mine. The
+code itself was produced through iterative prompting, manual review and
+integration testing on my side.
 
 No agent prompts, persona libraries or strategy code were forked into this
 repository. The four agent roles in `agents/` are written specifically for

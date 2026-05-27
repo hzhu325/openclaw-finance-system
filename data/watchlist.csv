@@ -1,0 +1,2 @@
+symbol,name,market,enabled
+TEST,Deterministic sample asset,SIM,true

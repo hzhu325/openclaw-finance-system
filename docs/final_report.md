@@ -127,7 +127,7 @@ python -B -m unittest discover -s tests
 最近一次测试结果为：
 
 ```text
-Ran 3 tests
+Ran 4 tests
 OK
 ```
 

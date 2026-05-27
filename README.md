@@ -8,7 +8,7 @@ It implements a small but complete workflow:
 1. Load market bars from CSV or generate deterministic sample bars.
 2. Load shared market context from `memory/`.
 3. Calculate RSI, MACD, returns, VaR and CVaR.
-4. Run a bull-vs-bear debate protocol.
+4. Run a bull-vs-bear debate protocol that reads local agent briefs.
 5. Produce a strict JSON trade proposal.
 6. Run an independent risk review.
 7. Produce a human approval card and simulation-only order draft.
@@ -35,8 +35,12 @@ Generated reports are written to `reports/`.
 - `schemas/` - strict JSON schemas for model/tool outputs.
 - `memory/` - shared project memory and decision log.
 - `docs/` - architecture, agent design, runbook and analysis report.
-- `config/` - OpenClaw-facing agent, gateway, news and schedule examples.
+- `config/` - OpenClaw-facing agent, gateway, news, schedule and trading-policy examples.
 - `tests/` - standard-library workflow tests.
+- `.github/workflows/tests.yml` - CI entry point for the same unit tests.
+
+Strategy and risk thresholds are kept in `config/trading_policy.json`. Generated
+`reports/latest_*` files are local run artifacts and are not committed.
 
 ## Safety Rules
 

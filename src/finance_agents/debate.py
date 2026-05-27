@@ -1,78 +1,141 @@
-from __future__ import annotations
+from pathlib import Path
 
 from .models import DebateResult, IndicatorSnapshot
+from .policy import TradingPolicy
 
 
-def _pct(value: float) -> str:
+def pct(value: float) -> str:
     return f"{value * 100:.2f}%"
 
 
-def run_debate(symbol: str, ind: IndicatorSnapshot) -> DebateResult:
+def load_agent_briefs(agents_dir: Path) -> dict[str, str]:
+    briefs: dict[str, str] = {}
+    for role in ("analyst", "risk"):
+        soul = agents_dir / role / "SOUL.md"
+        if not soul.exists():
+            continue
+        lines = [
+            line.strip("- ").strip()
+            for line in soul.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
+        briefs[role] = " ".join(lines[:3])
+    return briefs
+
+
+def add_case(points: list[str], text: str, score: float) -> float:
+    points.append(text)
+    return score
+
+
+def strongest(points: list[str]) -> str:
+    if not points:
+        return "the available evidence"
+    return max(points, key=len)
+
+
+def run_debate(
+    symbol: str,
+    ind: IndicatorSnapshot,
+    policy: TradingPolicy | None = None,
+    agent_briefs: dict[str, str] | None = None,
+) -> DebateResult:
+    policy = policy or TradingPolicy()
+    debate = policy.debate
+    agent_briefs = agent_briefs or {}
     bull_points: list[str] = []
     bear_points: list[str] = []
     bull_score = 0.0
     bear_score = 0.0
 
     if ind.close > ind.ma20 > ind.ma50:
-        bull_points.append("Price is above both MA20 and MA50, showing positive trend alignment.")
-        bull_score += 0.35
+        bull_score += add_case(
+            bull_points,
+            f"Price {ind.close:.2f} is above MA20 {ind.ma20:.2f} and MA50 {ind.ma50:.2f}.",
+            debate.trend_score,
+        )
     else:
-        bear_points.append("Trend alignment is weak because price is not cleanly above MA20 and MA50.")
-        bear_score += 0.25
+        bear_score += add_case(
+            bear_points,
+            f"Trend is not aligned: close={ind.close:.2f}, MA20={ind.ma20:.2f}, MA50={ind.ma50:.2f}.",
+            debate.trend_penalty,
+        )
 
     if ind.macd_hist > 0:
-        bull_points.append("MACD histogram is positive, implying upward momentum.")
-        bull_score += 0.25
+        bull_score += add_case(
+            bull_points,
+            f"MACD histogram is positive at {ind.macd_hist:.6f}, so momentum is still supportive.",
+            debate.momentum_score,
+        )
     else:
-        bear_points.append("MACD histogram is negative, implying fading momentum.")
-        bear_score += 0.25
+        bear_score += add_case(
+            bear_points,
+            f"MACD histogram is negative at {ind.macd_hist:.6f}, which weakens the momentum case.",
+            debate.momentum_score,
+        )
 
     if 45 <= ind.rsi14 <= 68:
-        bull_points.append("RSI is constructive without being extremely overbought.")
-        bull_score += 0.20
+        bull_score += add_case(
+            bull_points,
+            f"RSI14={ind.rsi14:.2f} is constructive without being extremely overbought.",
+            debate.rsi_constructive_score,
+        )
     elif ind.rsi14 > 72:
-        bear_points.append("RSI is stretched, raising pullback risk.")
-        bear_score += 0.20
+        bear_score += add_case(
+            bear_points,
+            f"RSI14={ind.rsi14:.2f} is stretched, so pullback risk is higher.",
+            debate.rsi_constructive_score,
+        )
     elif ind.rsi14 < 35:
-        bull_points.append("RSI is depressed, creating a possible mean-reversion setup.")
-        bull_score += 0.10
-        bear_points.append("Low RSI may also reflect persistent selling pressure.")
-        bear_score += 0.10
+        bull_score += add_case(
+            bull_points,
+            f"RSI14={ind.rsi14:.2f} is depressed enough to allow a mean-reversion argument.",
+            debate.rsi_reversal_score,
+        )
+        bear_score += add_case(
+            bear_points,
+            "The same low RSI can also mean selling pressure has not cleared yet.",
+            debate.rsi_reversal_score,
+        )
 
     if ind.return_5d > 0:
-        bull_points.append(f"Five-day return is positive at {_pct(ind.return_5d)}.")
-        bull_score += 0.10
+        bull_score += add_case(bull_points, f"Five-day return is positive at {pct(ind.return_5d)}.", debate.five_day_return_score)
     else:
-        bear_points.append(f"Five-day return is negative at {_pct(ind.return_5d)}.")
-        bear_score += 0.10
+        bear_score += add_case(bear_points, f"Five-day return is negative at {pct(ind.return_5d)}.", debate.five_day_return_score)
 
-    if ind.cvar95 > 0.04 or ind.max_drawdown60 > 0.12:
-        bear_points.append(
-            f"Tail risk is elevated: CVaR95={_pct(ind.cvar95)}, max drawdown60={_pct(ind.max_drawdown60)}."
+    if ind.cvar95 > debate.tail_cvar_watch or ind.max_drawdown60 > debate.tail_drawdown_watch:
+        bear_score += add_case(
+            bear_points,
+            f"Tail risk needs attention: CVaR95={pct(ind.cvar95)}, max drawdown60={pct(ind.max_drawdown60)}.",
+            debate.tail_risk_penalty,
         )
-        bear_score += 0.25
 
     if not bull_points:
-        bull_points.append("Bull case is weak; no strong positive evidence was found.")
+        bull_points.append("Bull case is thin; no strong positive evidence was found.")
     if not bear_points:
-        bear_points.append("Bear case is limited; no major technical risk was found.")
+        bear_points.append("Bear case is limited; no major measured risk dominated the snapshot.")
+
+    cross_bull = (
+        f"Bull challenges whether the bear case overweights {strongest(bear_points).lower()} "
+        f"while ignoring any rebound setup in the latest indicators."
+    )
+    cross_bear = (
+        f"Bear challenges whether the bull case leans too heavily on {strongest(bull_points).lower()} "
+        "without enough confirmation from risk-adjusted reward."
+    )
+    final_bull = (
+        "Bull would proceed only after the risk role confirms position size, stop loss and approval state; "
+        f"analyst brief: {agent_briefs.get('analyst', 'no analyst profile loaded')}"
+    )
+    final_bear = (
+        "Bear prefers HOLD or a smaller draft when tail loss or trend weakness remains unresolved; "
+        f"risk brief: {agent_briefs.get('risk', 'no risk profile loaded')}"
+    )
 
     rounds = [
-        {
-            "round": "thesis",
-            "bull": " ".join(bull_points),
-            "bear": " ".join(bear_points),
-        },
-        {
-            "round": "cross_examination",
-            "bull": "Bull asks whether risk is already reflected in the price and whether momentum is improving.",
-            "bear": "Bear asks whether the signal depends too much on recent trend and ignores tail loss.",
-        },
-        {
-            "round": "final_argument",
-            "bull": "Proceed only if risk manager approves position sizing and downside controls.",
-            "bear": "Prefer HOLD or reduced size unless reward clearly compensates for measured tail risk.",
-        },
+        {"round": "thesis", "bull": " ".join(bull_points), "bear": " ".join(bear_points)},
+        {"round": "cross_examination", "bull": cross_bull, "bear": cross_bear},
+        {"round": "final_argument", "bull": final_bull, "bear": final_bear},
     ]
     net = bull_score - bear_score
     markdown = "\n".join(

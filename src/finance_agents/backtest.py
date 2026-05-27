@@ -1,12 +1,13 @@
-from __future__ import annotations
-
 from .debate import run_debate
 from .indicators import max_drawdown, pct_returns, snapshot
 from .models import MarketBar
+from .policy import TradingPolicy
 from .strategy import make_trade_signal
 
 
-def run_backtest(bars: list[MarketBar], symbol: str, initial_cash: float = 100_000.0) -> dict:
+def run_backtest(bars: list[MarketBar], symbol: str, initial_cash: float | None = None, policy: TradingPolicy | None = None) -> dict:
+    policy = policy or TradingPolicy()
+    initial_cash = policy.account_equity if initial_cash is None else initial_cash
     if len(bars) < 80:
         raise ValueError("Need at least 80 bars for backtest")
 
@@ -18,8 +19,8 @@ def run_backtest(bars: list[MarketBar], symbol: str, initial_cash: float = 100_0
     for idx in range(60, len(bars) - 1):
         history = bars[: idx + 1]
         ind = snapshot(history)
-        debate = run_debate(symbol, ind)
-        signal = make_trade_signal(symbol, ind, debate, account_equity=max(cash, 1.0))
+        debate = run_debate(symbol, ind, policy=policy)
+        signal = make_trade_signal(symbol, ind, debate, account_equity=max(cash, 1.0), policy=policy)
         next_open = bars[idx + 1].open
         action = signal["recommendation"]
         quantity = int(signal["order"]["quantity"])

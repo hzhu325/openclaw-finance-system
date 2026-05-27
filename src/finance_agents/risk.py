@@ -1,14 +1,17 @@
-from __future__ import annotations
-
 from .models import IndicatorSnapshot, RiskReview
+from .policy import TradingPolicy
 from .strategy import validate_trade_signal
 
 
 def review_signal(
     signal: dict,
     ind: IndicatorSnapshot,
-    account_equity: float = 100_000.0,
+    account_equity: float | None = None,
+    policy: TradingPolicy | None = None,
 ) -> RiskReview:
+    policy = policy or TradingPolicy()
+    account_equity = policy.account_equity if account_equity is None else account_equity
+    risk_policy = policy.risk
     reasons: list[str] = []
     schema_errors = validate_trade_signal(signal)
     reasons.extend(f"Schema: {error}" for error in schema_errors)
@@ -19,15 +22,17 @@ def review_signal(
     notional = quantity * ind.close
     exposure_pct = notional / account_equity if account_equity else 0.0
 
-    max_position_pct = float(signal.get("risk", {}).get("max_position_pct", 0.10))
-    if exposure_pct > max_position_pct + 0.001:
+    max_position_pct = float(signal.get("risk", {}).get("max_position_pct", policy.position.max_position_pct))
+    if exposure_pct > max_position_pct + risk_policy.exposure_buffer:
         reasons.append(f"Exposure {exposure_pct:.2%} exceeds limit {max_position_pct:.2%}.")
-    if ind.var95 > 0.035:
-        reasons.append(f"VaR95 {ind.var95:.2%} exceeds 3.50% threshold.")
-    if ind.cvar95 > 0.055:
-        reasons.append(f"CVaR95 {ind.cvar95:.2%} exceeds 5.50% threshold.")
-    if ind.max_drawdown60 > 0.20:
-        reasons.append(f"60-day max drawdown {ind.max_drawdown60:.2%} exceeds 20.00% threshold.")
+    if ind.var95 > risk_policy.var95_limit:
+        reasons.append(f"VaR95 {ind.var95:.2%} exceeds {risk_policy.var95_limit:.2%} threshold.")
+    if ind.cvar95 > risk_policy.cvar95_limit:
+        reasons.append(f"CVaR95 {ind.cvar95:.2%} exceeds {risk_policy.cvar95_limit:.2%} threshold.")
+    if ind.max_drawdown60 > risk_policy.max_drawdown60_limit:
+        reasons.append(
+            f"60-day max drawdown {ind.max_drawdown60:.2%} exceeds {risk_policy.max_drawdown60_limit:.2%} threshold."
+        )
 
     if action == "HOLD" and not schema_errors:
         decision = "APPROVE_HOLD"

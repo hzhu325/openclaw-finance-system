@@ -15,6 +15,9 @@ python -m unittest discover -s tests
 python .\scripts\run_mvp.py --symbol TEST
 ```
 
+By default the command reads `config/trading_policy.json`. Pass another policy
+file with `--policy <PATH>` when testing different limits or scoring values.
+
 Generated files:
 
 - `reports/latest_signal.json`
@@ -33,6 +36,9 @@ python .\scripts\run_mvp.py --symbol TEST --mode backtest
 ```
 
 This also writes `reports/latest_backtest.json`.
+
+The generated `reports/latest_*` files are local artifacts. They are useful for
+the dashboard and submission screenshots, but they are not tracked in Git.
 
 ## Provide Real CSV Data
 

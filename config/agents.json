@@ -3,6 +3,7 @@
   "mode": "simulation",
   "default_model": "deepseek/deepseek-v4-flash",
   "shared_memory": "memory/",
+  "trading_policy_config": "config/trading_policy.json",
   "message_gateway_config": "config/message_gateway.example.json",
   "news_sources_config": "config/news_sources.example.json",
   "agents": [

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import sys
 import unittest
 from pathlib import Path
@@ -10,7 +8,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from finance_agents.backtest import run_backtest
 from finance_agents.context import load_market_context
 from finance_agents.data import generate_sample_bars
-from finance_agents.debate import run_debate
+from finance_agents.debate import load_agent_briefs, run_debate
 from finance_agents.hitl import build_approval_card, build_simulated_order_draft
 from finance_agents.indicators import snapshot
 from finance_agents.risk import review_signal
@@ -51,6 +49,16 @@ class WorkflowTest(unittest.TestCase):
         context = load_market_context(ROOT / "memory")
         self.assertIn("event_count", context)
         self.assertIn("staleness_note", context)
+
+    def test_debate_loads_agent_briefs(self) -> None:
+        briefs = load_agent_briefs(ROOT / "agents")
+        self.assertIn("analyst", briefs)
+        self.assertIn("risk", briefs)
+
+        bars = generate_sample_bars("TEST", days=180)
+        debate = run_debate("TEST", snapshot(bars), agent_briefs=briefs)
+        self.assertIn("analyst brief:", debate.markdown)
+        self.assertIn("risk brief:", debate.markdown)
 
 
 if __name__ == "__main__":

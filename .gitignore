@@ -16,6 +16,7 @@ env/
 
 *.zip
 *.log
+reports/latest_*
 
 .DS_Store
 Thumbs.db

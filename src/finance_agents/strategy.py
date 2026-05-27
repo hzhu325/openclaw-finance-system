@@ -1,9 +1,8 @@
-from __future__ import annotations
-
 from datetime import datetime, timezone
 from typing import Any
 
 from .models import DebateResult, IndicatorSnapshot
+from .policy import TradingPolicy
 
 
 def _round_dict(values: dict[str, float], digits: int = 6) -> dict[str, float]:
@@ -14,17 +13,21 @@ def make_trade_signal(
     symbol: str,
     ind: IndicatorSnapshot,
     debate: DebateResult,
-    account_equity: float = 100_000.0,
+    account_equity: float | None = None,
+    policy: TradingPolicy | None = None,
 ) -> dict[str, Any]:
-    if debate.net_score >= 0.25 and ind.rsi14 < 75:
+    policy = policy or TradingPolicy()
+    account_equity = policy.account_equity if account_equity is None else account_equity
+    strategy = policy.strategy
+    position = policy.position
+
+    if debate.net_score >= strategy.buy_score and ind.rsi14 < strategy.max_buy_rsi:
         recommendation = "BUY"
-    elif debate.net_score <= -0.35:
+    elif debate.net_score <= strategy.sell_score:
         recommendation = "SELL"
     else:
         recommendation = "HOLD"
 
-    max_position_pct = 0.10
-    max_loss_pct = 0.02
     quantity = 0
     order_type = "NONE"
     limit_price = None
@@ -32,19 +35,22 @@ def make_trade_signal(
     take_profit = None
 
     if recommendation != "HOLD":
-        notional = account_equity * max_position_pct
+        notional = account_equity * position.max_position_pct
         quantity = max(1, int(notional // ind.close))
         order_type = "LIMIT"
         if recommendation == "BUY":
-            limit_price = round(ind.close * 1.002, 4)
-            stop_loss = round(ind.close * (1.0 - max_loss_pct), 4)
-            take_profit = round(ind.close * 1.04, 4)
+            limit_price = round(ind.close * (1.0 + position.buy_limit_offset), 4)
+            stop_loss = round(ind.close * (1.0 - position.max_loss_pct), 4)
+            take_profit = round(ind.close * (1.0 + position.take_profit_pct), 4)
         else:
-            limit_price = round(ind.close * 0.998, 4)
-            stop_loss = round(ind.close * (1.0 + max_loss_pct), 4)
-            take_profit = round(ind.close * 0.96, 4)
+            limit_price = round(ind.close * (1.0 - position.sell_limit_offset), 4)
+            stop_loss = round(ind.close * (1.0 + position.max_loss_pct), 4)
+            take_profit = round(ind.close * (1.0 - position.take_profit_pct), 4)
 
-    confidence = min(0.90, max(0.10, 0.50 + abs(debate.net_score) / 2.0))
+    confidence = min(
+        strategy.confidence_cap,
+        max(strategy.confidence_floor, strategy.confidence_base + abs(debate.net_score) * strategy.confidence_scale),
+    )
     rationale = [
         f"Debate net score is {debate.net_score:.3f}.",
         f"RSI14={ind.rsi14:.2f}, MACD histogram={ind.macd_hist:.6f}.",
@@ -56,7 +62,7 @@ def make_trade_signal(
         "schema_version": "1.0",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "symbol": symbol.upper(),
-        "horizon": "1-5 trading days",
+        "horizon": policy.horizon,
         "recommendation": recommendation,
         "confidence": round(confidence, 4),
         "rationale": rationale,
@@ -87,8 +93,8 @@ def make_trade_signal(
             "time_in_force": "DAY",
         },
         "risk": {
-            "max_position_pct": max_position_pct,
-            "max_loss_pct": max_loss_pct,
+            "max_position_pct": position.max_position_pct,
+            "max_loss_pct": position.max_loss_pct,
         },
         "human_approval_required": recommendation != "HOLD",
     }

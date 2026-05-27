@@ -1,0 +1,24 @@
+{
+  "mode": "simulation",
+  "browser_automation": {
+    "enabled": false,
+    "output_memory_file": "memory/market_events.md",
+    "sources": [
+      {
+        "id": "market_news",
+        "url": "https://finance.yahoo.com/",
+        "extract": "top market headlines and risk events"
+      },
+      {
+        "id": "sec_filings",
+        "url": "https://www.sec.gov/edgar/search/",
+        "extract": "recent filings for watchlist symbols"
+      }
+    ]
+  },
+  "context_contract": {
+    "format": "markdown bullet list",
+    "consumer": "src/finance_agents/context.py",
+    "staleness_policy": "agent must state when external news automation is not connected"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "mode": "simulation",
+  "gateways": [
+    {
+      "id": "slack-approval",
+      "provider": "slack",
+      "enabled": false,
+      "target": "#finance-agent-approvals",
+      "template": "reports/latest_human_approval_card.md",
+      "secret_env": "SLACK_BOT_TOKEN"
+    },
+    {
+      "id": "telegram-approval",
+      "provider": "telegram",
+      "enabled": false,
+      "target": "<chat_id>",
+      "template": "reports/latest_human_approval_card.md",
+      "secret_env": "TELEGRAM_BOT_TOKEN"
+    },
+    {
+      "id": "wecom-approval",
+      "provider": "wecom",
+      "enabled": false,
+      "target": "<webhook_url>",
+      "template": "reports/latest_human_approval_card.md",
+      "secret_env": "WECOM_WEBHOOK"
+    }
+  ],
+  "rules": {
+    "send_when": ["PENDING_HUMAN_APPROVAL", "BLOCKED_BY_RISK"],
+    "release_execution_without_human": false,
+    "live_broker_adapter_enabled": false
+  }
+}

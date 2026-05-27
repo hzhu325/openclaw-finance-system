@@ -1,0 +1,35 @@
+{
+  "project": "openclaw-finance-system",
+  "mode": "simulation",
+  "default_model": "deepseek/deepseek-v4-flash",
+  "shared_memory": "memory/",
+  "trading_policy_config": "config/trading_policy.json",
+  "message_gateway_config": "config/message_gateway.example.json",
+  "news_sources_config": "config/news_sources.example.json",
+  "agents": [
+    {
+      "id": "finance-coordinator",
+      "role": "Coordinator/CIO",
+      "workspace": "agents/coordinator",
+      "responsibility": "Owns task decomposition, decision aggregation and final recommendation packaging."
+    },
+    {
+      "id": "finance-analyst",
+      "role": "Research/Analyst",
+      "workspace": "agents/analyst",
+      "responsibility": "Owns market data, indicators, news context and bull/bear arguments."
+    },
+    {
+      "id": "finance-trader",
+      "role": "Trader/Ops",
+      "workspace": "agents/trader",
+      "responsibility": "Converts approved recommendations into simulated order drafts."
+    },
+    {
+      "id": "finance-risk",
+      "role": "Risk Manager",
+      "workspace": "agents/risk",
+      "responsibility": "Applies VaR/CVaR, exposure limits and HITL gating."
+    }
+  ]
+}

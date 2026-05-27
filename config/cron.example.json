@@ -1,0 +1,16 @@
+{
+  "jobs": [
+    {
+      "id": "pre_market_scan",
+      "schedule": "30 8 * * 1-5",
+      "command": "python scripts/run_mvp.py --symbol TEST",
+      "description": "Generate pre-market simulated signal and risk review."
+    },
+    {
+      "id": "close_review",
+      "schedule": "30 16 * * 1-5",
+      "command": "python scripts/run_mvp.py --symbol TEST --mode backtest",
+      "description": "Run simulated close review and lightweight backtest."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-05-24T01:05:05.002287+00:00",
+  "status": "PENDING_HUMAN_APPROVAL",
+  "symbol": "TEST",
+  "recommendation": "SELL",
+  "confidence": 0.9,
+  "data_source": "deterministic_sample",
+  "risk_decision": "APPROVE_WITH_HUMAN_CONFIRMATION",
+  "risk_reasons": [
+    "Risk checks passed; human confirmation remains mandatory."
+  ],
+  "risk_metrics": {
+    "notional": 9893.772,
+    "exposure_pct": 0.098938,
+    "var95": 0.015662,
+    "cvar95": 0.016523,
+    "max_drawdown60": 0.174073
+  },
+  "order": {
+    "action": "SELL",
+    "quantity": 92,
+    "order_type": "LIMIT",
+    "limit_price": 107.3259,
+    "stop_loss": 109.6918,
+    "take_profit": 103.2394,
+    "time_in_force": "DAY"
+  },
+  "approval_required": true,
+  "approval_state": "AWAITING_HUMAN",
+  "execution_released": false,
+  "approval_instruction": "Record an explicit APPROVED or REJECTED decision in memory/decision_log.md before any broker adapter is allowed to consume this order draft."
+}

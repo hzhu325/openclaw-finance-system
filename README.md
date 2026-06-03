@@ -103,13 +103,12 @@ This is an MVP. Known limitations include:
 
 ## Acknowledgements and Development Notes
 
-This project was written with the help of AI-assisted coding. Design
-decisions — the simulation-first scope, the
-HITL-mandatory contract, the schema-first interface between agents, the
-externalization of policy thresholds into `config/trading_policy.json`, and
-the choice to keep the debate deterministic in this iteration — were mine. The
-code itself was produced through iterative prompting, manual review and
-integration testing on my side.
+I designed and led this project during my BONC internship, including the
+simulation-first scope, the HITL-mandatory contract, the schema-first
+interface between agents, the externalisation of policy thresholds into
+`config/trading_policy.json`, and the deterministic debate protocol for
+this iteration. AI coding assistants were used during implementation; the
+design, review and integration work was mine.
 
 No agent prompts, persona libraries or strategy code were forked into this
 repository. The four agent roles in `agents/` are written specifically for

@@ -10,15 +10,10 @@ must pass schema validation, an independent risk review, and an explicit human
 approval card before any execution path could be released.
 
 This project was developed during my data science internship at BONC
-(东方国信), April – June 2026. It is the second iteration of the
-multi-agent trading work and the one that specifically focuses on
-**safety, schema discipline, and HITL governance**. The first iteration
-— a broader seven-agent prototype with fundamental, technical, market
-and news-sentiment analysts plus a walk-forward backtest — was developed
-in Week 2 of the internship and is published separately as
-[internship-W2](https://github.com/hzhu325/internship-W2). The two are
-intentionally different in scope and neither replaces the other: this
-repository is the narrower, safety-disciplined version.
+(东方国信), April – June 2026. It is the iteration of the work that
+specifically focuses on **safety, schema discipline, and HITL governance**;
+earlier internal iterations explored different aspects of multi-agent
+coordination and are not published here.
 
 ---
 
